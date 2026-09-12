@@ -7,7 +7,7 @@ Este repositorio contiene mi despliegue de IA en infraestructura local. El objet
 - Controlar la experiencia del usuario
 - Garantizar el cumplimiento de la normativa AI Act europea, mediante la implementación de los sistemas de control de acceso, guardarrailes y observabilidad, con persistencia tanto de la infrastructura (modelos, motores, ...) como de los log de acceso.
 
-Actualmente este es un trabajo en curso. 
+> **Estado del proyecto:** Este repositoria documenta un laboratorio experimental en curso. La arquitectura, herramientas seleccionadas, configuraciones y procedimientos de despliegue pueden cambiar a medida que avance el estudio.
 
 ## Alcance
 
@@ -74,7 +74,8 @@ Usamos las siguientes máquinas.
     - 48 GB RAM (compartida CPU-GPU)
 
 
-## Arquitectura del despliegue
+# Arquitectura del despliegue
+## Reglas generales
 - Para cumplir la multiplataforma y la modularidad se utilizan contendedores
 - El motor de contenedores es Podman. Podman es el contenedor incluido por omisión en las versiones recientes de RedHat y plataformas compatibles. En MacOS se utiliza [podman-desktop](https://formulae.brew.sh/cask/podman-desktop) para tener la comodidad de una GUI para administrar los contenedores, aunque si ha restricciones de espacio se puede utilizar sin GUI (`brew install podman`)
     - Alternativas: Docker o Rancher
@@ -82,9 +83,77 @@ Usamos las siguientes máquinas.
 - Para orquestación se utiliza la tecnología de [quadlets](https://www.redhat.com/en/blog/quadlet-podman). La decisión por utilizar esta solución vino de que el soporte de podman compose es más limitado y porque el manejo es más simple en ambas plataformas
     - Alternativas: Docker-compose si se usa Docker, Kubernetes si aumenta el número de módulos
 
+## Plataforma técnica
+Se reutilizará la plataforma actual para poder aprovechar los recursos disponibles.
 
-# Despliegue de Open WebUI
+The laboratory currently targets two different local computing platforms:
 
-- [Servidor Linux](deploy.openwebui.linux.es.md)
-- [Portatil MacOS](deploy.openwebui.macos.es.md)
+- **Linux / x86-64 / NVIDIA GPU**
+  - CUDA-based acceleration
+  - Oracle Linux / Red Hat-compatible environment
+
+- **macOS / Apple Silicon**
+  - Apple Silicon unified memory architecture
+  - MLX-based acceleration where supported
+
+The deployment architecture aims to keep the higher-level services as portable as possible while allowing each platform to use the most appropriate AI inference backend.
+
+
+## Arquitectura de alto nivel
+
+```
+Local AI Infrastructure
+├── Common LLM inferece engine
+│   └── Ollama
+│
+├── AI Framework
+│   └── Open WebUI
+│   └── SearxNG
+│   └── Chroma
+│   └── MCP
+│       └── WIP...
+│
+├── Image Generation
+│   └── ComfyUI
+│
+├── Audio / TTS
+│   └── VoiceBox / Qwen-TTS
+│
+├── Document Processing
+│   └── Marker / Surya OCR
+│
+└── Study Platform
+    └── Open Notebook
+```
+
+## Modelos IA usados
+
+Los modelos se manejan de forma independiente de los servicios que los usan cuando sea posible, usando el motor de inferencia local. Adicionalmente, en los servicios que lo permitan, se permite seleccionar modelos en la nube para comparación y benchmarking
+
+El formato de los modelos viene dado por el objeto, el motor de inferencia y la plataforma.
+
+- GGUF models
+- Ollama-compatible models
+- MLX models
+- Diffusion models for image generation
+- Modelos especializados embebidos en plataforma (OCR, proceso de documentos, Audio-TTS)
+
+La selección del modelo se realiza de forma independiente de la plataforma y del motor de inferencia.
+
+# Estructura del repositorio
+
+```text
+.
+├── openwebui/          # Open WebUI deployment
+├── comfyui/            # Local image generation deployment
+├── marker/             # Document recognition deployment
+├── notebooks/          # Study and knowledge-management tools
+├── models/             # Model documentation and evaluation
+└── docs/               # General documentation
+```
+
+## Despliegue de Open WebUI
+
+- [Servidor Linux](openwebui/README.linux.es.md)
+- [Portatil MacOS](openwebui/README.macos.es.md)
 
