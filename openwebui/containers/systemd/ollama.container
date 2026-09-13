@@ -3,7 +3,8 @@ Description=Ollama LLM Server
 After=network-online.target
 
 [Container]
-Image=docker.io/ollama/ollama:latest
+# Image=docker.io/ollama/ollama:latest
+Image=docker.io/ollama/ollama:0.34.0
 
 # Pull policy
 # Never pull the image
@@ -24,8 +25,8 @@ PodmanArgs=--device nvidia.com/gpu=all
 
 PublishPort=11434:11434
 
-Volume=/vm/models/ollama:/root/.ollama:Z
-Volume=/vm/models/ollama/tmp:/tmp:Z
+Volume=/vm/ai/ollama/.ollama:/root/.ollama:Z
+Volume=/vm/ai/ollama/.tmp:/tmp:Z
 
 Environment=OLLAMA_HOST=0.0.0.0:11434
 Environment=OLLAMA_NUM_PARALLEL=1
