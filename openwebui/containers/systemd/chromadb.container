@@ -1,0 +1,38 @@
+[Unit]
+Description=ChromaDB Vector Database
+
+[Container]
+Image=ghcr.io/chroma-core/chroma:1.5.9
+
+# Pull policy
+# Never pull the image
+# Pull=never
+# Pull only if the image does not exist locally
+Pull=missing
+# Pull if newer versions with same tag
+# Pull=newer
+
+ContainerName=chromadb
+
+# PublishPort=8000:8000
+
+Volume=/vm/ai/chromadb:/data:Z
+
+Environment=IS_PERSISTENT=TRUE
+Environment=PERSIST_DIRECTORY=/data
+
+Network=ai
+
+# Seguridad
+NoNewPrivileges=true
+
+# Chroma escucha aquí
+Exec=run --host 0.0.0.0 --port 8000 --path /data
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+

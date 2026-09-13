@@ -1,0 +1,53 @@
+[Unit]
+Description=Ollama LLM Server
+After=network-online.target
+
+[Container]
+Image=docker.io/ollama/ollama:latest
+
+# Pull policy
+# Never pull the image
+# Pull=never
+# Pull only if the image does not exist locally
+Pull=missing
+# Pull if newer versions with same tag
+# Pull=newer
+
+ContainerName=ollama
+
+Network=ai.network
+# IP=10.91.0.100
+
+# JMA: Device not supported in this quadlet version
+# Device=nvidia.com/gpu=all
+PodmanArgs=--device nvidia.com/gpu=all
+
+PublishPort=11434:11434
+
+Volume=/vm/models/ollama:/root/.ollama:Z
+Volume=/vm/models/ollama/tmp:/tmp:Z
+
+Environment=OLLAMA_HOST=0.0.0.0:11434
+Environment=OLLAMA_NUM_PARALLEL=1
+Environment=OLLAMA_MAX_LOADED_MODELS=1
+Environment=OLLAMA_KEEP_ALIVE=5m
+# Context size. Optimization for reduce memory optimization
+Environment=OLLAMA_CONTEXT_LENGTH=8192
+
+# JMA: Avoid SELinux restriction
+# SecurityLabelDisable=true
+# sudo setsebool -P container_use_devices 1
+# sudo setsebool -P container_use_xserver_devices 1
+# sudo ausearch -c 'nvidia-smi' --raw | audit2allow -M mi-nvidiasmi
+# sudo semodule -X 300 -i mi-nvidiasmi.pp
+
+# importante para modelos grandes
+ShmSize=1g
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
+

@@ -1,0 +1,31 @@
+[Unit]
+Description=SearxNG Web Search Engine
+
+[Container]
+# Using Docker Hub registry
+# Image=docker.io/searxng/searxng:latest
+# Using Github Container Registry
+Image=ghcr.io/searxng/searxng:2026.6.4-e6559c9ad
+
+# NOTICE: New images EVERYDAY. Be careful if use latest tag
+# Pull policy
+# Never pull the image
+# Pull=never
+# Pull only if the image does not exist locally
+Pull=missing
+# Pull if newer versions with same tag
+# Pull=newer
+
+ContainerName=searxng
+		
+Network=ai.network
+
+# PublishPort=8081:8080
+
+Volume=/vm/ai/searxng/config:/etc/searxng:Z
+Volume=/vm/ai/searxng/data:/var/cache/searxng:Z
+
+
+[Install]
+WantedBy=default.target
+

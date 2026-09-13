@@ -144,12 +144,14 @@ La selección del modelo se realiza de forma independiente de la plataforma y de
 
 ```text
 .
-├── openwebui/          # Open WebUI deployment
-├── comfyui/            # Local image generation deployment
-├── marker/             # Document recognition deployment
-├── notebooks/          # Study and knowledge-management tools
-├── models/             # Model documentation and evaluation
-└── docs/               # General documentation
+├── openwebui/              # Open WebUI deployment
+│   ├── containers/systemd  # Service containers (quadlets)
+│   └── environment.d       # Service envirnoment variables configuration
+├── comfyui/                # Local image generation deployment
+├── marker/                 # Document recognition deployment
+├── notebooks/              # Study and knowledge-management tools
+├── models/                 # Model documentation and evaluation
+└── docs/                   # General documentation
 ```
 
 ## Despliegue de Open WebUI

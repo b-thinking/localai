@@ -160,12 +160,14 @@ Model selection and evaluation are documented separately from the infrastructure
 
 ```text
 .
-├── openwebui/          # Open WebUI deployment
-├── comfyui/            # Local image generation deployment
-├── marker/             # Document recognition deployment
-├── notebooks/          # Study and knowledge-management tools
-├── models/             # Model documentation and evaluation
-└── docs/               # General documentation
+├── openwebui/              # Open WebUI deployment
+│   ├── containers/systemd  # Service containers (quadlets)
+│   └── environment.d       # Service envirnoment variables configuration
+├── comfyui/                # Local image generation deployment
+├── marker/                 # Document recognition deployment
+├── notebooks/              # Study and knowledge-management tools
+├── models/                 # Model documentation and evaluation
+└── docs/                   # General documentation
 ```
 
 ## Open WebUI Deployment
