@@ -251,7 +251,32 @@ Por tanto, instalaremos los componentes mínimos, que son las siguientes:
 ## Servicio de búsqueda: SearxNG
 # Casos de uso
 ## Framework AI: Open WebUI
+
 ### 1. Chat simple
+
+- **Selección del modelo**: El primer punto para empezar a usar Open Web en modo conversación es seleccionar el modelo. En este nivel, la pregunta es contestada por un modelo concreto, o bien se puede enviar a varios modelos simultáneamente para hacer un benchmark. La lista desplegable muestra los modelos disponibles, en 3 categorías
+
+    1. Modelo local servido por ollama
+    2. Modelo en la nube (debes haber registrado tus claves en 'conexiones'). Indicado por el símbolo 🔗
+    3. Modelo personalizado, creado en la sección `Area de trabajo / Workspace`indicando las capacidades a usar de un modelo genérico. 
+
+    Indicado por el símbolo ⓘ. En este caso, un tooltip mostrará la descripción del modelo
+
+    Si se desea hacer una comparativa, se puede usar el modelo Arena, o bien añadir varios modelos con el símbolo '+'. **IMPORTANTE**: Se debe recordar que en la infraestructura actual sólo cabe un modelo, lo que obliga a ollama a descargar un modelo para cargar el otro, lo que conlleva bastante tiempo. Por tanto, la recomendación es hacer todas las pruebas con un modelo antes de pasar a otro
+
+    ![Model Selection](images/model_selection.png)
+
+- **Manejo de la conversación**: Open WebUI funciona como los chats de los modelos de nube, esto es, mantiene la conversación mientras no seleccionemos nuevo chat. Recordemos que en la configuración del contenedor hemos fijado un tamaño de contexto pequeño (que se puede ampliar según la prueba a hacer). O sea, no se usa la capacidad declarada del modelo, sino lo configurado en el contenedor. Además, todos los chats anteriores están disponibles en la sección izquierda del interfase.
+
+- **Resultado de la pregunta**: A diferencia de los chats habituales, y teniendo en cuenta que se manejan capacidades RAG, búsqueda y herramientas, la sección de respuesta puede incluir varios apartados que inicialmente están colapsados, pero se pueden abrir. Estos apartados son, entre otros:
+    - Planificación / proceso de razonamiento (cuando el modelo soporte razonamiento y esté activado)
+    - Resultados de la consulta RAG (ya rerankeada). Ver en el caso siguiente como probar el RAG.
+    - Resultados de la búsqueda en la Web
+    - Respuesta al chat
+    - Opciones de seguimiento (con posibilidad de click directo)
+
+- **Ajuste de capacidades**: PENDIENTE - modelos custom
+
 ### 2. RAG simple (con uso de RAG interno)
 ### 3. Búsqueda Web
 ### 4. Razonamiento / tooling / MCP
