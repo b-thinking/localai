@@ -1,4 +1,5 @@
 # Instalación
+
 ## Prerequisitos
 ### Podman: Instalación
 Podman es el motor de contenedores oficial para RedHat 9 y 10 (y por consiguiente Oracle Linux 9 y 10). Ha sustituido al motor de Docker que se usaba en RedHat 7 y 8. 
@@ -191,35 +192,132 @@ Por tanto, instalaremos los componentes mínimos, que son las siguientes:
         ```container
         ShmSize=1g
         ```
-
 - Pruebas mínimas: En la versión de contenedor de ollama, podríamos usar el cliente invocando directamente al contenedor, Peor como lo vamos a conectar mediante API Rest, lo correcto es verificar esta. NOTA: Recuerda que Ollama ahora soporta su API nativa y la API compatible con OpenAI
-    - Cargar un modelo
+    - Cargar un modelo (API)
         ```shell
         curl http://localhost:11434/api/pull -d '{
             "name": "gemma2"
             }'
-    
-    - Listar los modelos cargados
+        ```
+    - Cargar un modelo (comando)
+        ```shell
+        podman exec -it ollama ollama pull qwen3.5-4b
+        ```
+    - Listar los modelos cargados (API)
         ```shell
         # Native API
         curl http://localhost:11434/api/tags
         # OpenAI API
         curl -X GET http://localhost:11434/v1/models
         ```
-    - Pregunta simple
+    - Listar los modelos cargados (comando)
+        ```shell
+        podman exec -it ollama ollama list
+        ```
+    - Pregunta simple (API)
         ```shell
         curl http://localhost:11434/api/generate -d '{
-        "model": "gemma2",
-        "prompt": "¿Por qué el cielo es azul?",
-        "stream": false
-        }'
+            "model": "gemma2",
+            "prompt": "¿Por qué el cielo es azul?",
+            "stream": false
+            }'
         ```
-    - Borrar un modelo
+    - Pregunta simple (comando)
+        ```shell
+        podman exec -it ollama ollama run gemma2 "¿Por qué el cielo es azul?"
+        ```
+    - Borrar un modelo (API)
         ```shell
         curl -X DELETE http://localhost:11434/api/delete -d '{
             "name": "gemma2"}'
         ```
+    - Borrar un modelo (comando)
+        ```shell
+        podman exec -it ollama ollama rm gemma2
+        ```
+- Monitorización: Si la instalación es correcta, ollama ejecutará sus modelos en la GPU de NVIDIA a través del ctk. Se puede monitorizar el uso de la GPU en el host con:
+    ```shell
+    nvidia-smi -l 2
+    # Check processes line
+    #   GPU   GI   CI              PID   Type   Process name                        GPU Memory 
+    #     0   N/A  N/A         1611228      C   /usr/lib/ollama/llama-server           4572MiB
+    #  Check type: C (Container)
+    #  Check memory: Initially, the model size. It will increase with KVCache consumption  
+    ```
+- **PENDIENTE**: Configurar para ejecute el modelo en la GPU pero mantenga el KVCache en la memoria de la CPU
+
 ## Framework AI: Open WebUI
 ## Base de datos vectorial para RAG: Chroma
 ## Servicio de búsqueda: SearxNG
-# Ejemplos de uso
+# Casos de uso
+## Framework AI: Open WebUI
+### 1. Chat simple
+### 2. RAG simple (con uso de RAG interno)
+### 3. Búsqueda Web
+### 4. Razonamiento / tooling / MCP
+
+# Anexo: Modelos utilizados
+
+## ¿Cómo selecciono el modelo?
+Para seleccionar un modelo debemos tener en cuenta varios factores, entre los que destacan
+
+- El uso deseado (chat básico, codificación, chat avanazado con búsqueda y razonamiento, embedding, reranking ...)
+- El tamaño del modelo a utilizar, que se divide en
+    - Número de parámetros
+    - Quantización
+    - Tipo de cuantización / Arquitectura de cuantización 
+- Formato de archivo: Para su uso en local, el estándar es [GGUF](https://huggingface.co/docs/hub/gguf), sobre todo si vas a querer probar varios modelos cargando y descargando
+- La arquitectura del modelo. Si queremos usar modelos grandes, podemos usar arquitecturas MoE (mixture-of-experts) que cargan el experto necesario, pero no necesitan cargar todo el modelo. 
+- La especialidad: Hay modelos especializados en embedding, en reranking, etc.
+- Las capacidades del modelo: Específicamente si tiene la capacidad de tooling y la capacidad de thinking (cuidado, hay modelos que soportan razonamiento pero hay que activarlo o desactivarlo a demanda)
+- Las capacidades de la GPU
+
+## No encuentro el modelo que quiero probar en el formato deseado
+
+Cada vez más es posible encontrar los modelos ya preparados para su uso en local, incluyendo la cuantización a 4bits. Pero si se necesita o desea, es una tarea que se puede hacer localmente, en dos pasos: Conversión a GGUF y cuantización. [How to Convert a Hugging Face Model to GGUF and Quantize It](https://ai-tldr.dev/learn/local-open-models/quantization-and-formats/convert-hf-model-to-gguf/). Una vez convertido debe desplegarse en Ollama creando un modelo custom a través de un fichero [Modelfile](https://docs.ollama.com/import#importing-a-gguf-based-model-or-adapter)
+
+## Modelos utilizados en este laboratorio (en GPU de 6GB VRAM)
+
+Estos son los modelos que estoy probando en el laboratorio, ordenados de mayor a menor prioridad, por tipo de uso.
+
+Recordad que los modelos chinos **NO** se publican directamente en Hugging Face y/o se publican tarde. En estos casos el enlace apunta a la implementación de un contribuidor individual. En estos casos, el enlace incluido os lleva a la página de búsqueda de Hugging Face.
+
+Por otro lado, `ollama` puede descargar modelos de Hugging Face directamente, pero también mantiene su propia biblioteca. En mi caso, prefiero este segundo origen siempre que se pueda, porque al menos están probadas.
+
+### General chat
+- [Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B): 3,4GB `podman exec -it ollama ollama pull qwen3.5:4b` 
+- [Gemma 3 4B IT](https://huggingface.co/google/gemma-3-4b-it): 3,3GB `podman exec -it ollama ollama pull  gemma3:4b`
+- [Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct): 2,5 GB `podman exec -it ollama ollama pull  phi4-mini`
+- Otros: Llama 3.2 3B, Qwen 3 (versión anterior de mucho éxito)
+
+### Código
+- [Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B): 3,4GB `podman exec -it ollama ollama pull qwen3.5:4b` 
+- [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B): 2,5 GB `podman exec -it ollama ollama pull qwen3:4b` El primer Qwen3, que tuvo mucho éxito
+- [Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct): 2,5 GB `podman exec -it ollama ollama pull  phi4-mini`
+- [qwen2.5-coder:3b](https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct-GGUF): 1,9GB. `podman exec -it ollama ollama pull qwen2.5-coder:3b` Más antiguo, pero sigue siendo utilizado por su ligereza
+- [Qwen3-Coder-30B-A3B Q4](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct): Experimental. No entra por tamaño, pero es MoE experto a experto sí
+- Otros: deepseek-coder:6.7b (probablemente en Q4), `qwen3.6:35b-a3b-coding-nvfp4`
+
+NOTA: **PENDIENTE DE ACTUALIZAR** Ejecutar Claude con ollama `ollama launch claude --model qwen3.6:35b-a3b-coding-nvfp4`
+
+### Razonamiento
+- [Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B): 3,4GB `podman exec -it ollama ollama pull qwen3.5:4b` 
+- [Qwen3-8B Q4](https://huggingface.co/Qwen/Qwen3-8B): 5,2 GB `podman exec -it ollama ollama pull qwen3:8b-q4_K_M` 
+- [DeepSeek-R1-Distill-Qwen-7B Q4](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B): 4,7 GB`podman exec -it ollama ollama pull deepseek-r1:7b-qwen-distill-q4_K_M`
+- [Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct): 2,5 GB `podman exec -it ollama ollama pull  phi4-mini`
+- [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B): 2,5 GB `podman exec -it ollama ollama pull qwen3:4b` 
+
+
+### Embeddings
+- [BAAI/bge-m3](https://huggingface.co/BAAI/bge-m3): 1,2GB `podman exec -it ollama ollama pull bge-m3` Recomendado para embeddings en español
+- [nomic-embed-text-v1.5](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5) : 0,3GB `podman exec -it ollama ollama pull nomic-embed-text:v1.5`
+- Otros: bge-small, bge-base`
+
+### Reranking
+- [BAAI/bge-reranker-base](): 2,0GB `podman exec -it ollama ollama pull bbjson/bge-reranker-base`. Inicial
+- [BAAI/bge-reranker-v2-m3](https://huggingface.co/BAAI/bge-reranker-v2-m3): 0,6GB `podman exec -it ollama ollama pull qllama/bge-reranker-v2-m3` Español, más moderno, más pesado. La versión incluida es la cuantizada a 8bits, pero están disponibles la cuantizada a 4bits, y la nativa f16
+- [jina-reranker-v2-base-multilingual](https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual): Español. Más pesado. No disponible en el repositorio de ollama, requiere el proceso de conversión y despliegue comentado más arriba, o bien buscar una versión de un contribuidor individual.
+
+### Modelos españoles (haciendo patria)
+- [Salamandra-7b-instruct-2606-GGUF](https://huggingface.co/KikoCis/salamandra-7b-instruct-2606-GGUF): Disponible con cuantizados del Q3 al Q8. La versión de ollama es Q4_K_M. 4,9GB `podman exec -it ollama ollama pull hdnh2006/salamandra-7b-instruct`
+- [Aitana-7B-S-Instruct](https://huggingface.co/gplsi/Aitana-7B-S-Instruct). Para el uso con ollama requiere importarlo mediante Modelfile (ya existe la versión GGUF, con lo que la importación es trivial)

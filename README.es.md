@@ -39,6 +39,7 @@ Se ha descartado la generación de video, dada la limitación de recursos dispon
 - Motor de inferencia: [Ollama](https://ollama.com/)
     - Alternativa: [vLLM](https://vllm.ai/)
     - Alternativa: [llama.cpp](https://github.com/ggml-org/llama.cpp)
+    - Alternativa (sólo MacOS): [omlx](https://omlx.ai/)
 - Frameworks de IA: [Open WebUI](https://openwebui.com/) con las siguientes herramientas
     - Base de datos vectorial: [Chroma](https://github.com/chroma-core/chroma)
     - Motor de búsqueda WEB: [SearxNG](https://github.com/searxng/searxng)
@@ -60,18 +61,20 @@ Se ha descartado la generación de video, dada la limitación de recursos dispon
 
 Usamos las siguientes máquinas.
 
-- Servidor on-premise
+- Servidor de sobremesa
     - PC HP Victus
-    - Intel i5-12400F
+    - Intel i5-12400F: 6 cores / 12 threads
     - 32GB RAM
     - GPU NVIDIA 1660
     - VRAM 6GB
     - Oracle Linux 10.1 (RedHat 10.1 compatible)
 
 - Portatil
-    - Macbook PRO 2025
-    - M4
-    - 48 GB RAM (compartida CPU-GPU)
+  - MacBook Pro 2026
+  - Apple M5 Pro: 18 cores (12 performance + 6 supercores)
+  - 48 GB unified memory (shared between CPU and GPU)
+  - GPU 20 cores
+  - MacOS Tahoe 26.2
 
 
 # Arquitectura del despliegue
