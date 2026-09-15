@@ -163,10 +163,16 @@ Por tanto, instalaremos los componentes mínimos, que son las siguientes:
 - Los contenedores **NO** fijan una dirección IP: Atributo comentado `# IP=x.x.x.x`a nivel de contenedor. Si se quisiera definir, debe definirse previamente el rango en el archivo de red, y la IP asignada debe pertenecer a este rango.
 
 ## Motor de inferencia: Ollama
-- La configuración del quadlet debe copiarse en `~/.config/containers/systemd/ollama.container`. Se debe modificar la ubicación de los directorios de datos y temporal a la ubicación correcta.
+- La configuración del quadlet debe copiarse en `~/.config/containers/systemd/ollama.container`. **Se debe modificar la ubicación de los directorios de datos y temporal** a la ubicación correcta, según se indica en Volúmenes.
 - Configuración del contenedor [ollama.container](./containers/systemd/ollama.container)
     - **Imagen:** Ollama no publica sus contenedores en GHRC, por lo que la alternativa es usar el repositorio de docker o bien imágenes de la comunidad. En este caso se usan el registro de docker. Se utiliza la versión 0.34.0 para CUDA. `Image=docker.io/ollama/ollama:0.34.0`
-    - **Volúmenes**: Este contenedor usa un directorio para toda la configuración de ollama (incluyendo modelos, que ocupan mucho espacio) y otro para el directorio temporal. Si está definida la variable `PODMAN_VOLUMES_AI`en el archivo de configuración [ai.conf](./environment.d/ai.conf)
+    - **Dispositivo**: Debe incluirse el dispositivo con el atributo `AddDevice` apuntando a la GPU declarada en el NVIDIA Container Toolkit (ver más arriba)
+        ```ini
+        # NVIDIA GPU Device
+        AddDevice=nvidia.com/gpu=all
+        ```
+    - **Puertos**: Se utiliza el puerto 11434 para el servicio de ollama. En principio, si sólo va a acceder OpenWebUI no es necesarios publicar el puerto, pero otros laboratorios comparten el servicio, por lo que el puerto está publicado a nivel de todas las interfaces del host (`PublishPort=11434:11434`). Se puede acceder a la web de ollama con `http://localhost:11434/`
+    - **Volúmenes**: Este contenedor usa un directorio para toda la configuración de ollama (incluyendo modelos, que ocupan mucho espacio) y otro para el directorio temporal. En este archivo, se asume que los volúmenes están definidos en `/vm/ai/ollama` propiedad del usuario que ejecuta los servicios
         - Creamos los directorios usando el usuario local. **Sustituir `/vm/ai/ollama`por tu ubicación de datos**
             ```shell
             mkdir -p /vm/ai/ollama/.ollama
@@ -177,7 +183,6 @@ Por tanto, instalaremos los componentes mínimos, que son las siguientes:
             Volume=/vm/ai/ollama/.ollama:/root/.ollama:Z
             Volume=/vm/ai/ollama/.tmp:/tmp:Z
             ```
-    - **Puertos**: Se utiliza el puerto 11434 para el servicio de ollama. En principio, si sólo va a acceder OpenWebUI no es necesarios publicar el puerto, pero otros laboratorios comparten el servicio, por lo que el puerto está publicado a nivel de todas las interfaces del host (`PublishPort=11434:11434`). Se puede acceder a la web de ollama con `http://localhost:11434/`
     - **Entorno**: El propio ollama se configura usando variables de entorno. Explicar todas estas variables está fuera de esté ámbito, y además parece ser que no hay una documentación oficial con todas las variavbles. Puedes revisar es recopilación independiente [aquí](https://modelpiper.com/blog/ollama-environment-variables). Para maximizar las capacidades de mi tarjeta (pequeña) estoy asumiendo un sólo usuario, sin tareas en paralelo (sin agentes), y sin multimodelo (descarga automática de modelos a los 5 minutos)
 
         ```container
@@ -247,10 +252,50 @@ Por tanto, instalaremos los componentes mínimos, que son las siguientes:
 - **PENDIENTE**: Configurar para ejecute el modelo en la GPU pero mantenga el KVCache en la memoria de la CPU
 
 ## Framework AI: Open WebUI
+- La configuración del quadlet debe copiarse en `~/.config/containers/systemd/open-webui.container`. **Se debe modificar la ubicación de los directorios de datos y temporal** a la ubicación correcta, según se indica en Volúmenes, la clave `WEBUI_SECRET_KEY` y el nombre de dominio para la verificación CORS si se planea usar un reverse proxy securizado.
+- Configuración del contenedor [open-webui.container](./containers/systemd/open-webui.container)
+    - **Dependencias**: El servicio debe esperar a qué `ollama`haya arrancado. Esto se define en la sección `[Init]`del qualet. NOTA: Con este configuración, la parada o rearranque de `ollama`forzará la parada o reinicio de este contenedor
+        ```ini
+        [Unit]
+        Description=Open WebUI
+        After=ollama.service
+        Requires=ollama.service
+        ```
+    - **Imagen**: Se utiliza la versión 0.11.1 del repositorio GHCR. `Image=ghcr.io/open-webui/open-webui:v0.11.1`. He comprobado que cuando se cambia la imagen se ejecutan automáticamente los scripts de actualización de la base de datos, pero recuerda hacer copia de seguridad del directorio de datos cada vez que modifiques la versión.
+    - **Puertos**: El contenedor utiliza internamente el puerto 3000 que vamos a publicar al 8080 para este servicio. En principio, si sólo va a acceder OpenWebUI no es necesarios publicar el puerto, pero otros laboratorios comparten el servicio, por lo que el puerto está publicado a nivel de todas las interfaces del host (`PublishPort=3000:8080`). Se puede acceder a la web de ollama con `http://localhost:8080/`. NOTA: En mi caso, este servidor está publicado en un reverse proxy montado con apache, lo que tiene algún efecto en la configuración según se indica en las variables de entorno.
+    - **Volúmenes**: Este contenedor usa un directorio para toda la configuración de Open WebUI **y de sus herramientas** (incluyendo la base de datos vectorial y los archivos de documentos). En este archivo, se asume que el volumen de datos está definidos en `/vm/ai/open-webui/data` propiedad del usuario que ejecuta los servicios
+        - Creamos el directorio usando el usuario local. **Sustituir `/vm/ai/open-webui/data`por tu ubicación de datos**
+            ```shell
+            mkdir -p /vm/ai/open-webui/data
+            ```
+        - Configuración de los volúmenes (nótese el :Z para el soporte de SELinux). **Sustituir `/vm/ai/open-webui/data` por tu ubicación de datos**
+            ```container
+            Volume=/vm/ai/open-webui/data:/app/backend/data:Z
+            ```
+        - Este directorio debe tener copia de seguridad. La configuración inicial (gestionada por Open WebUI - no se debe hacer nada inicialmente) incluye
+            - Archivos `webui.db*`: Base de datos SQLite utilizada por Open WebUI. Documentación [aquí](https://docs.openwebui.com/reference/database-schema)
+            - Directorio `vector_db`: Base de datos vectorial utilizada por Open WebUI (Chroma) internamente (es posible definir una externa)
+            - Directorio `uploads`: Archivos subidos por el usuario para la base de datos vectorial
+            - Directorio `cache`: Diferentes chases según operativa y modelo
+    - **Entorno**:
+        - **Obligatorio**: Ubicación del servidor ollama: **NO** hace falta modificarlo si se mantiene la configuración del quadlet del punto anterior `Environment=OLLAMA_BASE_URL=http://ollama:11434`. Sin esta variable Open WebUI se puede usar pero únicamente con servicios Cloud
+        - **Opcional**: Por defecto, cuando arranca Open WebUI por primera vez, pide el usuario y password del usuario administrador y queda configurado en modo multiusuario. Si se va a usar en modo individual (un único usuario y siempre el mismo) se puede desactivar la gestion de usuarios `Environment=WEBUI_AUTH=False`.
+        - **Opcional/Dependencia**: Si se usan usuarios independientes y/o multiples servidores en balanceo de carga, se necesita crear una clave de firma de los tokens JWT. En el terminal ejecuta `openssl rand -base64 32` para generar una clave aleatoria y asígnala a Environment=WEBUI_SECRET_KEY=<SetHerea32characterKeyInHex>. El detalle de la documentación [aquí](https://docs.openwebui.com/getting-started/advanced-topics/hardening/#secret-key)
+        - **Opcional/Recomendado**: Si vas a utilizar Open WebUI para RAG (siguiente caso de uso) se recomienda establecer la variable`Environment=RAG_SYSTEM_CONTEXT=True`. El detalle del porqué de la recomendación [aquí](https://docs.openwebui.com/troubleshooting/rag/#8-slow-follow-up-responses-kv-cache-invalidation)
+        - **Opcional/Dependencia**: Si se configura un Reverse Proxy, se debe indicar el nombre del dominio de acceso a Open WebUI en `Environment=CORS_ALLOW_ORIGIN=https://open-webui.example.com`
+        - **Opcional**: Si se van a utilizar tools que accedan a internet, se puede configurar el User-Agent a utilizar `Environment=USER_AGENT=OpenWebUI-OracleLinux-Lab`
+    - **Adicional**: Puesto que este contenedor puede ejecutar tools de forma arbitraria, se añade esta opción de configuración, para evitar el escalado de privilegios mediante setsuid. `NoNewPrivileges=true`
 ## Base de datos vectorial para RAG: Chroma
 ## Servicio de búsqueda: SearxNG
 # Casos de uso
 ## Framework AI: Open WebUI
+
+### 0. Configuración inicial
+- **Capacidades de los modelos**
+    - **Configuración Global**: Se accede mediente Panel de Administración $\rightarrow$ Settings $rightarrow$ Models $\rightarrow$ Model Defaults $\rightarrow$ Configure. La recomendación inicial, si se van a probar múltiples modelos es **desactivar** todas las capacidades, y luego activarlas modelo a modelo. Durante las pruebas iniciales se observaron comportamientos extraños y **no repetibles** por tener activadas capacidades como las herramientas o la memoria. 
+![Capacidades globales de los modelos](images/global_model_capabilies.png)
+    - **Configuración individual**: La configuración de cada modelo se hace definiendo modelos personalizados en la sección de Area de trabajo o Workspace. Para cada modelo, se pueden crear múltiples configuraciones con nombres diferentes, descripción y capacidades, lo que permite usar el mismo modelo con diferentes capacidades. Documentación [aquí](https://docs.openwebui.com/features/workspace/models/). Del mismo modo, se pueden ajustar los hiperparámetros para cada prueba.
+    - **NOTA**: Esto mismo se puede hacer de forma puntual, para una sola prueba, en el panel de la derecha. **NO** se recomienda, porque es muy fácil olvidar qué parámetro se puso para cada prueba.
 
 ### 1. Chat simple
 
@@ -258,9 +303,9 @@ Por tanto, instalaremos los componentes mínimos, que son las siguientes:
 
     1. Modelo local servido por ollama
     2. Modelo en la nube (debes haber registrado tus claves en 'conexiones'). Indicado por el símbolo 🔗
-    3. Modelo personalizado, creado en la sección `Area de trabajo / Workspace`indicando las capacidades a usar de un modelo genérico. 
+    3. Modelo personalizado, creado en la sección `Area de trabajo / Workspace` indicando las capacidades a usar de un modelo genérico. Indicado por el símbolo ⓘ. En este caso, un tooltip mostrará la descripción del modelo.
 
-    Indicado por el símbolo ⓘ. En este caso, un tooltip mostrará la descripción del modelo
+    - NOTA: Los modelos que aparecen en la lista se pueden habilitar o deshabilitar en la configuración global.
 
     Si se desea hacer una comparativa, se puede usar el modelo Arena, o bien añadir varios modelos con el símbolo '+'. **IMPORTANTE**: Se debe recordar que en la infraestructura actual sólo cabe un modelo, lo que obliga a ollama a descargar un modelo para cargar el otro, lo que conlleva bastante tiempo. Por tanto, la recomendación es hacer todas las pruebas con un modelo antes de pasar a otro
 

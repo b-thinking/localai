@@ -19,10 +19,11 @@ ContainerName=ollama
 Network=ai.network
 # IP=10.91.0.100
 
-# JMA: Device not supported in this quadlet version
-# Device=nvidia.com/gpu=all
-PodmanArgs=--device nvidia.com/gpu=all
+# NVIDIA GPU Device
+AddDevice=nvidia.com/gpu=all
+# PodmanArgs=--device nvidia.com/gpu=all
 
+# Ollama available for internal Open-WebUI and external users
 PublishPort=11434:11434
 
 Volume=/vm/ai/ollama/.ollama:/root/.ollama:Z

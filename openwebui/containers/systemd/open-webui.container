@@ -6,7 +6,8 @@ Requires=ollama.service
 # Wants=network-online.target
 
 [Container]
-Image=ghcr.io/open-webui/open-webui:v0.9.6
+# Image=ghcr.io/open-webui/open-webui:v0.9.6
+Image=ghcr.io/open-webui/open-webui:v0.11.1
 
 # Pull policy
 # Never pull the image
@@ -29,10 +30,9 @@ Environment=OLLAMA_BASE_URL=http://ollama:11434
 # JMA: Disable authentication. Automatically login as "User"
 # Environment=WEBUI_AUTH=False
 
-# Doc: https://docs.openwebui.com/features/chat-conversations/rag/
+# Doc: https://docs.openwebui.com/troubleshooting/rag/#8-slow-follow-up-responses-kv-cache-invalidation
 # Recommended configuration: If you are using **Ollama**, **llama.cpp**, **OpenAI**, or **Vertex AI** and frequently "chat with your documents," set `RAG_SYSTEM_CONTEXT=True` in your environment to experience drastically faster follow-up responses!
 Environment=RAG_SYSTEM_CONTEXT=True
-
 
 # JMA: Normal level is INFO
 Environment=GLOBAL_LOG_LEVEL=INFO
@@ -40,15 +40,16 @@ Environment=GLOBAL_LOG_LEVEL=INFO
 
 
 # Set CORS protection (only when reverse proxy is in place)
-Environment=CORS_ALLOW_ORIGIN=https://open-webui.b-thinking.com
+Environment=CORS_ALLOW_ORIGIN=https://open-webui.example.com
 
 # User Agent for tools
 Environment=USER_AGENT=OpenWebUI-OracleLinux-Lab
 
-# Shared Secret Key (generated with `openssl rand -hex 32`)
-Environment=WEBUI_SECRET_KEY=2fe45ec148e5acdb3c128095c970a87c232e80f1d9764b3bd08f85bba004c877
+# Shared Secret Key (generated with `openssl rand -base64 32`)
+# Doc: https://docs.openwebui.com/getting-started/advanced-topics/hardening/#secret-key
+Environment=WEBUI_SECRET_KEY=<SetHerea32characterKeyInHex>
 
-# hardening razonable
+# Hardening / Avoid SUID escalation
 NoNewPrivileges=true
 
 [Service]
